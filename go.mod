@@ -7,7 +7,6 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	go.mongodb.org/mongo-driver v1.17.6
 	golang.org/x/crypto v0.40.0
-	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -47,4 +46,5 @@ require (
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.27.0 // indirect
 	golang.org/x/tools v0.34.0 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )
