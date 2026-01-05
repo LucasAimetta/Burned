@@ -17,6 +17,7 @@ type UserResponse struct {
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"createdAt"`
+	Password  string    `json:"password"`
 }
 
 type LoginRequest struct {
@@ -24,9 +25,13 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-type LoginResponse struct {
+type AuthResponse struct {
 	Token string       `json:"token"`
 	User  UserResponse `json:"user"`
+}
+
+type UpdatePasswordRequest struct {
+	Password string `json:"password" binding:"required,min=8,max=72"`
 }
 
 func UserRequestToModel(dto RegisterRequest) models.User {
@@ -46,5 +51,6 @@ func UserModelToResponse(model models.User) UserResponse {
 	response.Email = model.Email
 	response.Role = model.Role
 	response.CreatedAt = model.CreatedAt
+	response.Password = model.HashedPassword
 	return response
 }

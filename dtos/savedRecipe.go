@@ -7,6 +7,6 @@ type SavedRecipeRequest struct {
 }
 
 type SavedRecipeResponse struct {
-	RecipeID string    `json:"recipeId"`
+	RecipeID string    `json:"savedRecipeId"`
 	SavedAt  time.Time `json:"createdAt"`
 }
