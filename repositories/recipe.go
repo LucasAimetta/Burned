@@ -50,6 +50,7 @@ func (repository *RecipeRepository) UpdateRecipe(recipe models.Recipe) (*mongo.U
 		"tags":           recipe.Tags,
 		"ingredients":    recipe.Ingredients,
 		"image":          recipe.Image,
+		"updatedAt":      recipe.UpdatedAt,
 	}}
 	return collection.UpdateOne(context.TODO(), filter, update)
 }
