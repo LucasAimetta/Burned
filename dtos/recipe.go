@@ -28,21 +28,21 @@ type RecipeResponse struct {
 	Ingredients    []models.Ingredient `json:"ingredients" binding:"required,min=1,dive"`
 	Image          string              `json:"image" binding:"omitempty,max=2000"` // URL (por ahora)
 	CreatedAt      time.Time           `json:"createdAt"`
+	UpdatedAt      time.Time           `json:"updatedAt"`
 	ID             string              `json:"id"`
 }
 
 type RecipeSearchRequest struct {
-	Title          string              `json:"title" binding:"required,min=3,max=120"`
-	Description    string              `json:"description" binding:"required,min=3,max=350"`
-	Visibility     string              `json:"visibility" binding:"required,oneof=public private"`
-	TotalTime      int                 `json:"totalTime" binding:"required,gte=0,lte=100000"`
-	DificultyLevel string              `json:"dificultyLevel" binding:"required,oneof=easy medium hard"`
-	Ingredients    []models.Ingredient `json:"ingredients" binding:"required,min=1,dive"`
+	Title          string              `json:"title" binding:"omitempty,max=120"`
+	Description    string              `json:"description" binding:"omitempty,max=350"`
+	Visibility     string              `json:"visibility" binding:"omitempty,oneof=public private"`
+	TotalTime      int                 `json:"totalTime" binding:"omitempty"`
+	DificultyLevel string              `json:"dificultyLevel" binding:"omitempty,oneof=easy medium hard"`
+	Ingredients    []models.Ingredient `json:"ingredients" binding:"omitempty"`
 }
 
 func RecipeRequestToModel(dto RecipeRequest) models.Recipe {
 	var model models.Recipe
-	model.CreatedAt = time.Now()
 	model.DificultyLevel = dto.DificultyLevel
 	model.Image = dto.Image
 	model.Tags = dto.Tags
@@ -58,6 +58,7 @@ func RecipeRequestToModel(dto RecipeRequest) models.Recipe {
 func RecipeModelToResponse(model models.Recipe) RecipeResponse {
 	var response RecipeResponse
 	response.CreatedAt = model.CreatedAt
+	response.UpdatedAt = model.UpdatedAt
 	response.ID = model.ID.Hex()
 	response.DificultyLevel = model.DificultyLevel
 	response.Image = model.Image

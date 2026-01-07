@@ -17,6 +17,7 @@ type UserResponse struct {
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 	Password  string    `json:"password"`
 }
 
@@ -50,6 +51,7 @@ func UserModelToResponse(model models.User) UserResponse {
 	response.Name = model.Name
 	response.Email = model.Email
 	response.Role = model.Role
+	response.UpdatedAt = model.UpdatedAt
 	response.CreatedAt = model.CreatedAt
 	response.Password = model.HashedPassword
 	return response
