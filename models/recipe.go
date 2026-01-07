@@ -22,8 +22,6 @@ type Recipe struct {
 	UserID         primitive.ObjectID `bson:"userId" json:"userId"`
 	Title          string             `bson:"title" json:"title"`
 	Description    string             `bson:"description" json:"description"`
-	RatingCount    int64              `bson:"ratingCount" json:"ratingCount"`
-	RatingAvg      float64            `bson:"ratingAvg" json:"ratingAvg"`
 	Visibility     string             `bson:"visibility" json:"visibility"` // "public" | "private"
 	CreatedAt      time.Time          `bson:"createdAt" json:"createdAt"`
 	UpdatedAt      time.Time          `bson:"updatedAt" json:"updatedAt"`

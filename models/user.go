@@ -13,4 +13,5 @@ type User struct {
 	Email          string             `bson:"email" json:"email"`
 	Role           string             `bson:"role" json:"role"`
 	CreatedAt      time.Time          `bson:"createdAt" json:"createdAt"`
+	UpdatedAt      time.Time          `bson:"updatedAt" json:"updatedAt"`
 }
