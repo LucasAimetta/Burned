@@ -6,8 +6,7 @@ import (
 )
 
 type RateRecipeRequest struct {
-	RecipeID string `json:"recipeId"`
-	Stars    int    `json:"stars" binding:"required,gte=1,lte=5"`
+	Stars int `json:"stars" binding:"required,gte=1,lte=5"`
 }
 
 type RateRecipeResponse struct {
