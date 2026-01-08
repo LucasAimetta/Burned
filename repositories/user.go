@@ -18,6 +18,7 @@ type UserRepositoryInterface interface {
 	GetUserById(id primitive.ObjectID) (models.User, error)
 	GetUserByEmail(email string) (models.User, error)
 	GetUserByName(name string) (models.User, error)
+	GetUserByGoogleID(googleID string) (models.User, error)
 }
 
 type UserRepository struct {
@@ -50,7 +51,9 @@ func (repository *UserRepository) UpdateUser(user models.User) (*mongo.UpdateRes
 	collection := repository.db.GetClient().Database("Burned").Collection("User")
 	filter := bson.M{"_id": user.ID}
 	update := bson.M{"$set": bson.M{
-		"name": user.Name,
+		"name":      user.Name,
+		"google_id": user.GoogleID,
+		"updatedAt": user.UpdatedAt,
 	}}
 
 	result, err := collection.UpdateOne(context.TODO(), filter, update)
@@ -90,6 +93,17 @@ func (repository *UserRepository) GetUserByName(name string) (models.User, error
 	collection := repository.db.GetClient().Database("Burned").Collection("User")
 	filter := bson.M{"name": name}
 	var user models.User
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		return models.User{}, err
+	}
+	return user, nil
+}
+
+func (repository *UserRepository) GetUserByGoogleID(googleID string) (models.User, error) {
+	collection := repository.db.GetClient().Database("Burned").Collection("User")
+	var user models.User
+	filter := bson.M{"google_id": googleID}
 	err := collection.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		return models.User{}, err

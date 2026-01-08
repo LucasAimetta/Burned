@@ -3,6 +3,7 @@ package services
 import (
 	"burned/auth"
 	"burned/dtos"
+	"burned/models"
 	"burned/repositories"
 	"errors"
 	"time"
@@ -18,6 +19,7 @@ type UserServiceInterface interface {
 	GetUserById(id string) (dtos.UserResponse, error)
 	GetUserByEmail(email string) (dtos.UserResponse, error)
 	GetUserByName(name string) (dtos.UserResponse, error)
+	LoginOrRegisterGoogle(dto dtos.GoogleUserDTO) (dtos.UserResponse, error)
 }
 
 type UserService struct {
@@ -158,4 +160,35 @@ func (service *UserService) DeleteUser(id string) error {
 		return errors.New("user not found")
 	}
 	return err
+}
+
+func (service *UserService) LoginOrRegisterGoogle(dto dtos.GoogleUserDTO) (dtos.UserResponse, error) {
+	// Intenta buscar por GoogleID
+	user, err := service.repo.GetUserByGoogleID(dto.GoogleID)
+
+	if err != nil { // Si no existe por GoogleID, buscamos por Email a ver si ya tiene una cuenta creada
+		user, err = service.repo.GetUserByEmail(dto.Email)
+		if err != nil {
+			// Si no existe de ninguna forma, lo creamos
+			newUser := models.User{
+				Email:     dto.Email,
+				Name:      dto.Name,
+				GoogleID:  dto.GoogleID,
+				Role:      "user",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			_, err := service.repo.CreateUser(newUser)
+			if err != nil {
+				return dtos.UserResponse{}, err
+			}
+			user = newUser
+		} else {
+			// Si existe por email pero no tiene GoogleID, se lo vinculamos a su cuenta
+			user.GoogleID = dto.GoogleID
+			service.repo.UpdateUser(user)
+		}
+	}
+
+	return dtos.UserModelToResponse(user), nil
 }
