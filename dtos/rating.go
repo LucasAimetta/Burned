@@ -31,7 +31,7 @@ func RatingModelToResponse(model models.Rating) RateRecipeResponse {
 	var response RateRecipeResponse
 	response.CreatedAt = model.CreatedAt
 	response.UpdatedAt = model.UpdatedAt
-	response.RecipeID = model.ID.Hex()
+	response.RecipeID = model.RecipeID.Hex()
 	response.Stars = model.Stars
 	response.UserID = model.UserID.Hex()
 	response.ID = model.ID.Hex()

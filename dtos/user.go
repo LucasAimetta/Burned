@@ -10,6 +10,11 @@ type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email,max=120"`
 	Password string `json:"password" binding:"required,min=8,max=72"`
 }
+type GoogleUserDTO struct {
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	GoogleID string `json:"id"`
+}
 
 type UserResponse struct {
 	ID        string    `json:"id"`
