@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"burned/database"
+	"burned/dtos"
 	"burned/models"
 	"context"
 	"errors"
@@ -9,13 +10,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RatingRepositoryInterface interface {
-	RateRecipe(model models.Rating) (*mongo.InsertOneResult, error)
-	UpdateRating(model models.Rating) (*mongo.UpdateResult, error)
+	UpsertRating(model models.Rating) (*mongo.UpdateResult, error)
 	GetRatingByUserAndRecipe(model models.Rating) (models.Rating, error)
-	GetRatingByRecipe(recipeId primitive.ObjectID) (float64, error)
+	GetRatingByRecipe(recipeId primitive.ObjectID) (dtos.Avg, error)
 }
 
 type RatingRepository struct {
@@ -26,18 +27,28 @@ func NewRatingRepository(db database.DB) *RatingRepository {
 	return &RatingRepository{db: db}
 }
 
-func (repository *RatingRepository) RateRecipe(model models.Rating) (*mongo.InsertOneResult, error) {
+func (repository *RatingRepository) UpsertRating(model models.Rating) (*mongo.UpdateResult, error) {
 	collection := repository.db.GetClient().Database("Burned").Collection("Rating")
-	return collection.InsertOne(context.TODO(), model)
-}
 
-func (repository *RatingRepository) UpdateRating(model models.Rating) (*mongo.UpdateResult, error) {
-	collection := repository.db.GetClient().Database("Burned").Collection("Rating")
-	update := bson.M{"$set": bson.M{
-		"stars":     model.Stars,
-		"updatedAt": model.UpdatedAt,
-	}}
-	return collection.UpdateByID(context.TODO(), model.ID, update)
+	filter := bson.M{
+		"userId":   model.UserID,
+		"recipeId": model.RecipeID,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"stars":     model.Stars,
+			"updatedAt": model.UpdatedAt,
+		},
+		"$setOnInsert": bson.M{
+			"userId":    model.UserID,
+			"recipeId":  model.RecipeID,
+			"createdAt": model.CreatedAt,
+		},
+	}
+
+	opts := options.Update().SetUpsert(true)
+	return collection.UpdateOne(context.TODO(), filter, update, opts)
 }
 
 func (repository *RatingRepository) GetRatingByUserAndRecipe(model models.Rating) (models.Rating, error) {
@@ -61,7 +72,7 @@ func (repository *RatingRepository) GetRatingByUserAndRecipe(model models.Rating
 	return rating, nil
 }
 
-func (repository *RatingRepository) GetRatingByRecipe(recipeId primitive.ObjectID) (float64, error) {
+func (repository *RatingRepository) GetRatingByRecipe(recipeId primitive.ObjectID) (dtos.Avg, error) {
 	collection := repository.db.GetClient().Database("Burned").Collection("Rating")
 
 	pipeline := mongo.Pipeline{
@@ -78,25 +89,20 @@ func (repository *RatingRepository) GetRatingByRecipe(recipeId primitive.ObjectI
 			}},
 		},
 	}
-
+	var res dtos.Avg
 	cursor, err := collection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
-		return 0, err
+		return res, err
 	}
 	defer cursor.Close(context.TODO())
 
-	type result struct {
-		Avg float64 `bson:"avg"`
-	}
-
 	if cursor.Next(context.TODO()) {
-		var res result
-		if err := cursor.Decode(&res); err != nil {
-			return 0, err
-		}
-		return res.Avg, nil
-	}
 
+		if err := cursor.Decode(&res); err != nil {
+			return res, err
+		}
+		return res, nil
+	}
 	// No hay ratings
-	return 0, nil
+	return res, nil
 }
