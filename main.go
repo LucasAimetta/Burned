@@ -6,6 +6,7 @@ import (
 	"burned/middlewares"
 	"burned/repositories"
 	"burned/services"
+	"fmt"
 	"log"
 	"time"
 
@@ -26,7 +27,7 @@ var (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error cargando el archivo .env")
+		fmt.Println("Aviso: No se encontró el archivo .env, usando variables de entorno de Render")
 	}
 	router = gin.Default()
 
