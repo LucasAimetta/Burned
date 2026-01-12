@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"burned/dtos"
-	"burned/services"
+	"burned/backend/dtos"
+	"burned/backend/services"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

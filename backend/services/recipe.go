@@ -1,8 +1,8 @@
 package services
 
 import (
-	"burned/dtos"
-	"burned/repositories"
+	"burned/backend/dtos"
+	"burned/backend/repositories"
 	"errors"
 	"time"
 

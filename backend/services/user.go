@@ -1,10 +1,10 @@
 package services
 
 import (
-	"burned/auth"
-	"burned/dtos"
-	"burned/models"
-	"burned/repositories"
+	"burned/backend/auth"
+	"burned/backend/dtos"
+	"burned/backend/models"
+	"burned/backend/repositories"
 	"errors"
 	"time"
 

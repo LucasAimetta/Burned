@@ -1,9 +1,9 @@
 package repositories
 
 import (
-	"burned/database"
-	"burned/dtos"
-	"burned/models"
+	"burned/backend/database"
+	"burned/backend/dtos"
+	"burned/backend/models"
 	"context"
 	"errors"
 

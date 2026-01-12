@@ -1,11 +1,11 @@
 package main
 
 import (
-	"burned/database"
-	"burned/handlers"
-	"burned/middlewares"
-	"burned/repositories"
-	"burned/services"
+	"burned/backend/database"
+	"burned/backend/handlers"
+	"burned/backend/middlewares"
+	"burned/backend/repositories"
+	"burned/backend/services"
 	"fmt"
 	"log"
 	"time"

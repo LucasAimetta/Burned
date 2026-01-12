@@ -1,8 +1,8 @@
 package repositories
 
 import (
-	"burned/database"
-	"burned/models"
+	"burned/backend/database"
+	"burned/backend/models"
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson"

@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"burned/auth"
-	"burned/dtos"
-	"burned/services"
+	"burned/backend/auth"
+	"burned/backend/dtos"
+	"burned/backend/services"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -24,7 +24,7 @@ func NewAuthHandler(s services.UserServiceInterface) *AuthHandler {
 }
 
 var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  "http://localhost:8080/auth/google/callback",
+	RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
 	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 	Scopes: []string{

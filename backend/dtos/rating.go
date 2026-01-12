@@ -1,7 +1,7 @@
 package dtos
 
 import (
-	"burned/models"
+	"burned/backend/models"
 	"time"
 )
 

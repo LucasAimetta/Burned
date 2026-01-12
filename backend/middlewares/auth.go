@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"burned/auth"
+	"burned/backend/auth"
 	"net/http"
 	"strings"
 

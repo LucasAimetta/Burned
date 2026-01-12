@@ -1,9 +1,9 @@
 package services
 
 import (
-	"burned/dtos"
-	"burned/models"
-	"burned/repositories"
+	"burned/backend/dtos"
+	"burned/backend/models"
+	"burned/backend/repositories"
 	"errors"
 	"time"
 
