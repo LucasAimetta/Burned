@@ -102,17 +102,26 @@ func (handler *AuthHandler) Register(c *gin.Context) {
 }
 
 func (h *AuthHandler) GoogleCallback(c *gin.Context) {
+	// 1. IMPORTANTE: Aseguramos que la URL de redirección sea la misma que usamos en el Login
+	// Si no hacemos esto, Google nos dará error de "redirect_uri_mismatch"
+	redirectURL := os.Getenv("GOOGLE_REDIRECT_URL")
+	if redirectURL == "" {
+		redirectURL = "http://localhost:8080/auth/google/callback"
+	}
+	googleOauthConfig.RedirectURL = redirectURL
+
+	// 2. Intercambiamos el código por el token de Google
 	code := c.Query("code")
 	token, err := googleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Fallo en el intercambio"})
+		c.Redirect(http.StatusTemporaryRedirect, "http://localhost:5173/login?error=auth_failed")
 		return
 	}
 
-	// Obtener datos del perfil de Google
+	// 3. Obtener datos del perfil de Google
 	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		c.Redirect(http.StatusTemporaryRedirect, "http://localhost:5173/login?error=google_error")
 		return
 	}
 	defer resp.Body.Close()
@@ -120,27 +129,25 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	var googleUser dtos.GoogleUserDTO
 	json.NewDecoder(resp.Body).Decode(&googleUser)
 
-	// Lógica de BD: Login o Registro
+	// 4. Lógica de BD: Login o Registro
 	userResponse, err := h.service.LoginOrRegisterGoogle(googleUser)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al procesar usuario"})
+		c.Redirect(http.StatusTemporaryRedirect, "http://localhost:5173/login?error=db_error")
 		return
 	}
 
-	// Generar TU JWT (Persistencia)
+	// 5. Generar TU JWT (Token de sesión)
 	objID, _ := primitive.ObjectIDFromHex(userResponse.ID)
 	jwtToken, err := auth.GenerateToken(objID, userResponse.Email, userResponse.Role)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al generar token"})
+		c.Redirect(http.StatusTemporaryRedirect, "http://localhost:5173/login?error=token_error")
 		return
 	}
 
-	// Devolver el token al frontend
-	// El frontend debería guardar esto en LocalStorage o una Cookie
-	c.JSON(http.StatusOK, gin.H{
-		"token": jwtToken,
-		"user":  userResponse,
-	})
+	frontendURL := "http://localhost:5173"
+
+	// Redirigimos
+	c.Redirect(http.StatusTemporaryRedirect, frontendURL+"?token="+jwtToken)
 }
 
 func (handler *AuthHandler) GoogleLogin(c *gin.Context) {
