@@ -144,14 +144,23 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 }
 
 func (handler *AuthHandler) GoogleLogin(c *gin.Context) {
-	//  Definimos un "state". En producción, esto debería ser un string aleatorio
-	// guardado en una cookie para evitar ataques CSRF.
-	// Por ahora, usaremos uno fijo para probar.
-	state := "random-state-string"
+	// 1. Buscamos la variable de entorno
+	redirectURL := os.Getenv("GOOGLE_REDIRECT_URL")
 
-	//  Generamos la URL de Google con nuestros parámetros (ID, Scopes, RedirectURL)
+	// 2. LOGICA DE SEGURIDAD:
+	// Si la variable está vacía (porque estás en local y godotenv falló,
+	// o porque no la pusiste en Render), usamos localhost por defecto.
+	if redirectURL == "" {
+		redirectURL = "http://localhost:8080/auth/google/callback"
+	}
+
+	// 3. Asignamos la URL correcta a la configuración antes de usarla
+	googleOauthConfig.RedirectURL = redirectURL
+
+	// 4. Generamos el link de Google
+	state := "random-state-string" // Idealmente aleatorio
 	url := googleOauthConfig.AuthCodeURL(state)
 
-	//  Redirigimos al usuario a esa URL
+	// 5. Redirigimos
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
