@@ -100,74 +100,81 @@ func (handler *AuthHandler) Register(c *gin.Context) {
 		User:  user,
 	})
 }
-
 func (h *AuthHandler) GoogleCallback(c *gin.Context) {
-	// 1. IMPORTANTE: Aseguramos que la URL de redirección sea la misma que usamos en el Login
-	// Si no hacemos esto, Google nos dará error de "redirect_uri_mismatch"
+	// 1. Configurar la URL de redirección del Backend (Callback)
+	// En Render debe ser: https://burned.onrender.com/auth/google/callback
+	// En Local debe ser: http://localhost:8080/auth/google/callback
 	redirectURL := os.Getenv("GOOGLE_REDIRECT_URL")
 	if redirectURL == "" {
 		redirectURL = "http://localhost:8080/auth/google/callback"
 	}
 	googleOauthConfig.RedirectURL = redirectURL
 
-	// 2. Intercambiamos el código por el token de Google
+	// 2. Configurar la URL del Frontend (A donde enviamos al usuario después)
+	// En Render será tu dominio del frontend.
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173" // Fallback para desarrollo local
+	}
+
+	// 3. Intercambiamos el código por el token de Google
 	code := c.Query("code")
 	token, err := googleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
-		c.Redirect(http.StatusTemporaryRedirect, "http://localhost:5173/login?error=auth_failed")
+		// Redirigimos al frontend con error usando la variable dinámica
+		c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/login?error=auth_failed")
 		return
 	}
 
-	// 3. Obtener datos del perfil de Google
+	// 4. Obtener datos del perfil de Google
 	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
 	if err != nil {
-		c.Redirect(http.StatusTemporaryRedirect, "http://localhost:5173/login?error=google_error")
+		c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/login?error=google_error")
 		return
 	}
 	defer resp.Body.Close()
 
 	var googleUser dtos.GoogleUserDTO
-	json.NewDecoder(resp.Body).Decode(&googleUser)
-
-	// 4. Lógica de BD: Login o Registro
-	userResponse, err := h.service.LoginOrRegisterGoogle(googleUser)
-	if err != nil {
-		c.Redirect(http.StatusTemporaryRedirect, "http://localhost:5173/login?error=db_error")
+	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
+		c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/login?error=json_error")
 		return
 	}
 
-	// 5. Generar TU JWT (Token de sesión)
+	// 5. Lógica de BD: Login o Registro
+	userResponse, err := h.service.LoginOrRegisterGoogle(googleUser)
+	if err != nil {
+		c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/login?error=db_error")
+		return
+	}
+
+	// 6. Generar JWT
 	objID, _ := primitive.ObjectIDFromHex(userResponse.ID)
 	jwtToken, err := auth.GenerateToken(objID, userResponse.Email, userResponse.Role)
 	if err != nil {
-		c.Redirect(http.StatusTemporaryRedirect, "http://localhost:5173/login?error=token_error")
+		c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/login?error=token_error")
 		return
 	}
 
-	frontendURL := "http://localhost:5173"
-
-	// Redirigimos
+	// 7. ÉXITO: Redirigimos al frontend con el token
+	// Esto enviará al usuario a: https://tu-frontend.onrender.com?token=xyz...
 	c.Redirect(http.StatusTemporaryRedirect, frontendURL+"?token="+jwtToken)
 }
 
 func (handler *AuthHandler) GoogleLogin(c *gin.Context) {
-	// 1. Buscamos la variable de entorno
+	// 1. Buscamos la variable de entorno para el Callback
 	redirectURL := os.Getenv("GOOGLE_REDIRECT_URL")
 
-	// 2. LOGICA DE SEGURIDAD:
-	// Si la variable está vacía (porque estás en local y godotenv falló,
-	// o porque no la pusiste en Render), usamos localhost por defecto.
+	// Si la variable está vacía, usamos localhost por defecto.
 	if redirectURL == "" {
 		redirectURL = "http://localhost:8080/auth/google/callback"
 	}
 
-	// 3. Asignamos la URL correcta a la configuración antes de usarla
+	// 2. Asignamos la URL correcta a la configuración
 	googleOauthConfig.RedirectURL = redirectURL
 
-	// 4. Generamos el link de Google
-	state := "random-state-string" // Idealmente aleatorio
+	// 3. Generamos el link de Google y redirigimos al usuario a la pantalla de Google
+	state := "random-state-string"
 	url := googleOauthConfig.AuthCodeURL(state)
 
-	// 5. Redirigimos
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }

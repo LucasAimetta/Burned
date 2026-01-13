@@ -8,6 +8,7 @@ import (
 	"burned/backend/services"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -33,7 +34,12 @@ func main() {
 
 	// CONFIGURACIÓN DE CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173"},
+		AllowOrigins: []string{
+			"http://localhost:3000",
+			"http://localhost:5173",
+			os.Getenv("FRONTEND_URL"),              // <--- AGREGA ESTO IMPORTANTE
+			"https://burned-frontend.onrender.com", // Opcional: Pon aquí tu URL exacta de frontend si prefieres hardcodearla
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
