@@ -157,7 +157,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 
 	// 7. ÉXITO: Redirigimos al frontend con el token
 	// Esto enviará al usuario a: https://tu-frontend.onrender.com?token=xyz...
-	c.Redirect(http.StatusTemporaryRedirect, frontendURL+"?token="+jwtToken)
+	c.Redirect(http.StatusTemporaryRedirect, frontendURL+"/login?token="+jwtToken)
 }
 
 func (handler *AuthHandler) GoogleLogin(c *gin.Context) {
