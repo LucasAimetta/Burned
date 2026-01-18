@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-baseURL: 'https://burned.onrender.com',
+  // Lógica inteligente:
+  // 1. Si existe la variable de entorno (en Render), usa esa.
+  // 2. Si no existe (en tu PC), usa localhost.
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+  withCredentials: true
 });
 
 // Esto es para que todas las peticiones incluyan el Token si el usuario ya se logueó
