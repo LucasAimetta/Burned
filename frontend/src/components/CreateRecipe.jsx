@@ -1,10 +1,24 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, Clock, ChefHat, ImageIcon, Tag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Trash2, Save, Clock, ChefHat, ImageIcon, Tag, CheckCircle, X } from 'lucide-react';
 import api from '../api/axios';
-import Navbar from './Navbar'; // Asegúrate de tener este componente también, o comenta esta línea si aún no lo creas
+
+// Lista de tags sugeridos
+const PREDEFINED_TAGS = [
+  "Desayuno", "Almuerzo", "Cena", "Postre", 
+  "Vegano", "Vegetariano", "Sin TACC", "Rápido", 
+  "Saludable", "Pasta", "Carne", "Ensalada", "Picante"
+];
 
 const CreateRecipe = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Estados separados para Tags
+  const [tags, setTags] = useState([]); 
+  const [customTagInput, setCustomTagInput] = useState('');
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -12,7 +26,7 @@ const CreateRecipe = () => {
     totalTime: 0,
     dificultyLevel: 'medium',
     image: '',
-    tags: '', // Lo manejaremos como string separado por comas
+    // tags: '' // Ya no lo manejamos aquí como string, usamos el estado 'tags' de arriba
     ingredients: [{ name: '', quantity: 0 }],
     step: [{ title: '', descripcion: '', time: 0 }]
   });
@@ -25,7 +39,35 @@ const CreateRecipe = () => {
     });
   };
 
-  // Manejo de Ingredientes Dinámicos
+  // --- LÓGICA DE TAGS ---
+
+  // 1. Alternar selección de predefinidos
+  const togglePredefinedTag = (tag) => {
+    if (tags.includes(tag)) {
+      setTags(tags.filter(t => t !== tag));
+    } else {
+      setTags([...tags, tag]);
+    }
+  };
+
+  // 2. Agregar tag manual
+  const handleAddCustomTag = (e) => {
+    e.preventDefault(); // Evita que el enter envíe el formulario principal
+    const val = customTagInput.trim();
+    if (val && !tags.includes(val)) {
+      setTags([...tags, val]);
+      setCustomTagInput('');
+    }
+  };
+
+  // 3. Eliminar tag de la lista final
+  const removeTag = (tagToRemove) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  // --- FIN LÓGICA TAGS ---
+
+  // Manejo de Ingredientes
   const handleIngredientChange = (index, field, value) => {
     const newIngredients = [...formData.ingredients];
     newIngredients[index][field] = field === 'quantity' ? parseFloat(value) || 0 : value;
@@ -41,7 +83,7 @@ const CreateRecipe = () => {
     setFormData({ ...formData, ingredients: newIngredients });
   };
 
-  // Manejo de Pasos Dinámicos
+  // Manejo de Pasos
   const handleStepChange = (index, field, value) => {
     const newSteps = [...formData.step];
     newSteps[index][field] = field === 'time' ? parseInt(value) || 0 : value;
@@ -61,19 +103,20 @@ const CreateRecipe = () => {
     e.preventDefault();
     setLoading(true);
     
-    // Preparar el payload para el backend (convertir tipos si es necesario)
+    // Preparar el payload
     const payload = {
       ...formData,
-      tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
       totalTime: parseInt(formData.totalTime),
+      tags: tags // Enviamos el array de tags directamente
     };
 
     try {
-      // Endpoint POST /recipes
       await api.post('/recipes', payload); 
-      alert('¡Receta creada con éxito! 🔥');
-      // Opcional: Redirigir al home
-      window.location.href = "/";
+      setShowSuccess(true);
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.error || 'Error al crear la receta');
@@ -83,10 +126,7 @@ const CreateRecipe = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pb-10">
-      {/* Si tienes el Navbar, úsalo aquí. Si no, borra esta línea <Navbar /> */}
-      <Navbar /> 
-
+    <div className="min-h-screen bg-zinc-950 text-white pb-10 relative">
       <div className="flex justify-center p-6">
         <div className="max-w-4xl w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
           <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
@@ -182,19 +222,62 @@ const CreateRecipe = () => {
               </div>
             </div>
 
-            {/* Tags */}
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Tags (separados por coma)</label>
-              <div className="relative">
-                <Tag className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
-                <input
-                  name="tags"
-                  value={formData.tags}
-                  onChange={handleChange}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 pl-10 focus:ring-2 focus:ring-orange-500 outline-none"
-                  placeholder="italiana, pasta, cena"
-                />
-              </div>
+            {/* --- SECCIÓN TAGS ACTUALIZADA --- */}
+            <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50">
+                <label className="block text-sm font-medium text-zinc-300 mb-3 flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-orange-500" /> Etiquetas / Categorías
+                </label>
+                
+                {/* A. Tags Predeterminados */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                    {PREDEFINED_TAGS.map(tag => (
+                        <button
+                            key={tag}
+                            type="button"
+                            onClick={() => togglePredefinedTag(tag)}
+                            className={`px-3 py-1 rounded-full text-sm transition border ${
+                                tags.includes(tag)
+                                ? 'bg-orange-600 border-orange-600 text-white'
+                                : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white'
+                            }`}
+                        >
+                            {tag}
+                        </button>
+                    ))}
+                </div>
+
+                {/* B. Tag Personalizado */}
+                <div className="flex gap-2 mb-4">
+                    <input 
+                        type="text"
+                        value={customTagInput}
+                        onChange={e => setCustomTagInput(e.target.value)}
+                        placeholder="Agregar otra etiqueta (ej: Desayuno)..."
+                        className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm focus:border-orange-500 outline-none placeholder-zinc-600"
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddCustomTag(e)}
+                    />
+                    <button 
+                        type="button"
+                        onClick={handleAddCustomTag}
+                        className="bg-zinc-700 hover:bg-zinc-600 px-4 rounded-lg text-white font-medium transition"
+                    >
+                        <Plus className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {/* C. Visualización de Tags Seleccionados */}
+                {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 p-3 bg-zinc-900/50 rounded-lg border border-dashed border-zinc-700">
+                        {tags.map(tag => (
+                            <span key={tag} className="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-1 rounded text-sm flex items-center gap-1 animate-in fade-in zoom-in">
+                                {tag}
+                                <button type="button" onClick={() => removeTag(tag)} className="hover:text-white ml-1">
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Ingredientes Dinámicos */}
@@ -301,7 +384,7 @@ const CreateRecipe = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-900/20 transition-all flex justify-center items-center gap-2 text-lg"
+                className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-900/20 transition-all flex justify-center items-center gap-2 text-lg disabled:opacity-50"
               >
                 {loading ? 'Guardando...' : 'Publicar Receta'} <Save className="w-5 h-5" />
               </button>
@@ -310,6 +393,25 @@ const CreateRecipe = () => {
           </form>
         </div>
       </div>
+
+      {/* --- MODAL DE ÉXITO --- */}
+      {showSuccess && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300">
+          <div className="bg-zinc-900 border border-orange-500/30 p-8 rounded-2xl shadow-2xl shadow-orange-500/20 max-w-sm w-full text-center transform animate-in zoom-in-95 duration-300">
+            <div className="mx-auto bg-green-500/10 w-20 h-20 rounded-full flex items-center justify-center mb-6 border border-green-500/20">
+              <CheckCircle className="w-10 h-10 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">¡Receta Publicada!</h2>
+            <p className="text-zinc-400 mb-6">Tu receta ya está disponible en el feed principal.</p>
+            
+            {/* Barra de progreso decorativa */}
+            <div className="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
+              <div className="bg-orange-500 h-full animate-[shrink_2s_linear_forwards]" style={{width: '100%'}}></div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
