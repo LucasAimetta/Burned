@@ -46,7 +46,7 @@ func (handler *CommentHandler) CreateComment(c *gin.Context) {
 func (handler *CommentHandler) DeleteComment(c *gin.Context) {
 	commentId := c.Param("id")
 	userID, _ := c.Get("user_id")
-	userRole, _ := c.Get("role")
+	userRole, _ := c.Get("user_role")
 
 	err := handler.service.DeleteComment(commentId, userID.(string), userRole.(string))
 

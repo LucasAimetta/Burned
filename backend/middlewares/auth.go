@@ -36,7 +36,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Inyectar el user_id en el contexto
 		c.Set("user_id", claims.UserID)
 		c.Set("user_email", claims.Email)
-		c.Set("role", claims.Role)
+		c.Set("user_role", claims.Role)
 		c.Next()
 	}
 }

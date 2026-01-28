@@ -58,7 +58,7 @@ func (service *CommentService) CreateComment(comment dtos.CommentRequest, idUser
 	if !ok {
 		return dtos.CommentResponse{}, errors.New("invalid id")
 	}
-	response.ID = insertedOid.String()
+	response.ID = insertedOid.Hex()
 	return response, nil
 }
 func (service *CommentService) DeleteComment(commentId string, requesterId string, requesterRole string) error {
