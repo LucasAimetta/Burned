@@ -12,28 +12,35 @@ import (
 
 type SavedRecipeServiceInterface interface {
 	SavedRecipe(saved dtos.SavedRecipeRequest, userId string) (dtos.SavedRecipeResponse, error)
-	UnsavedRecipe(id string) error
-	GetRecipesSavedByUser(idUser string) ([]dtos.SavedRecipeResponse, error)
+	UnsavedRecipe(userId string, recipeId string) error
+	GetRecipesSavedByUser(idUser string) ([]dtos.RecipeResponse, error)
 	GetSavedCountByRecipe(idRecipe string) (int64, error)
 	GetTop10MostSaved() ([]models.TopSavedRecipe, error)
 }
 
 type SavedRecipeService struct {
-	repo repositories.SavedRecipeRepositoryInterface
+	repo       repositories.SavedRecipeRepositoryInterface
+	recipeRepo repositories.RecipeRepositoryInterface
 }
 
-func NewSavedRecipeService(r repositories.SavedRecipeRepositoryInterface) *SavedRecipeService {
-	return &SavedRecipeService{repo: r}
+func NewSavedRecipeService(r repositories.SavedRecipeRepositoryInterface, recipeRepo repositories.RecipeRepositoryInterface) *SavedRecipeService {
+	return &SavedRecipeService{repo: r, recipeRepo: recipeRepo}
 }
 
 func (service *SavedRecipeService) SavedRecipe(saved dtos.SavedRecipeRequest, userId string) (dtos.SavedRecipeResponse, error) {
 	userOid, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		return dtos.SavedRecipeResponse{}, errors.New("invalid ID")
+		return dtos.SavedRecipeResponse{}, errors.New("invalid user ID")
 	}
 	recipeOid, err := primitive.ObjectIDFromHex(saved.RecipeID)
 	if err != nil {
-		return dtos.SavedRecipeResponse{}, errors.New("invalid ID")
+		return dtos.SavedRecipeResponse{}, errors.New("invalid recipe ID")
+	}
+
+	_, err = service.repo.GetSavedRecipesSavedByUserAndRecipe(userOid, recipeOid)
+	if err != nil {
+		return dtos.SavedRecipeResponse{}, errors.New("Already saved")
+
 	}
 	//una vez obtenidos los oids desde los string mandados por parametros, guardamos
 	var model models.SavedRecipe
@@ -55,12 +62,16 @@ func (service *SavedRecipeService) SavedRecipe(saved dtos.SavedRecipeRequest, us
 	return response, nil
 }
 
-func (service *SavedRecipeService) UnsavedRecipe(id string) error {
-	oid, err := primitive.ObjectIDFromHex(id)
+func (service *SavedRecipeService) UnsavedRecipe(userId string, recipeId string) error {
+	userOid, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		return err
+		return errors.New("invalid user ID")
 	}
-	result, err := service.repo.UnsavedRecipe(oid)
+	recipeOid, err := primitive.ObjectIDFromHex(recipeId)
+	if err != nil {
+		return errors.New("invalid recipe ID")
+	}
+	result, err := service.repo.UnsavedRecipe(userOid, recipeOid)
 	//verificamos la cantidad de elementos eliminados, si es 0 ha habido un error
 	if result.DeletedCount == 0 {
 		return errors.New("saved recipe not found")
@@ -68,23 +79,24 @@ func (service *SavedRecipeService) UnsavedRecipe(id string) error {
 	return nil
 }
 
-func (service *SavedRecipeService) GetRecipesSavedByUser(idUser string) ([]dtos.SavedRecipeResponse, error) {
+func (service *SavedRecipeService) GetRecipesSavedByUser(idUser string) ([]dtos.RecipeResponse, error) {
 	oid, err := primitive.ObjectIDFromHex(idUser)
 	if err != nil {
-		return []dtos.SavedRecipeResponse{}, err
+		return []dtos.RecipeResponse{}, err
 	}
 	//convertimos el string en oid y obtenemos sus recetas guardadas
 	models, err := service.repo.GetRecipesSavedByUser(oid)
 	if err != nil {
-		return []dtos.SavedRecipeResponse{}, err
+		return []dtos.RecipeResponse{}, err
 	}
-	var savedRecipesResponses []dtos.SavedRecipeResponse
+	var savedRecipesResponses []dtos.RecipeResponse
 	//convertimos los models obtenidos a objetos del tipo response para devolverselo al cliente
 	for _, recipe := range models {
-		var savedRecipesResponse dtos.SavedRecipeResponse
-		savedRecipesResponse.RecipeID = recipe.ID.Hex()
-		savedRecipesResponse.SavedAt = recipe.CreatedAt
-		savedRecipesResponses = append(savedRecipesResponses, savedRecipesResponse)
+		savedRecipesResponse, err := service.recipeRepo.GetRecipeById(recipe.RecipeID)
+		if err != nil {
+			continue
+		}
+		savedRecipesResponses = append(savedRecipesResponses, dtos.RecipeModelToResponse(savedRecipesResponse))
 	}
 	return savedRecipesResponses, nil
 }

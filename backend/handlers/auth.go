@@ -54,7 +54,7 @@ func (handler *AuthHandler) LogIn(c *gin.Context) {
 	oid, error := primitive.ObjectIDFromHex(user.ID)
 	if error != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"Error": "internal server error"})
-
+		return
 	}
 	// Generar token
 	token, err := auth.GenerateToken(oid, user.Email, user.Role)
@@ -85,7 +85,7 @@ func (handler *AuthHandler) Register(c *gin.Context) {
 	oid, error := primitive.ObjectIDFromHex(user.ID)
 	if error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error": "internal server error"})
-
+		return
 	}
 
 	// Generar token

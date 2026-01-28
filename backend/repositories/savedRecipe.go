@@ -12,10 +12,11 @@ import (
 
 type SavedRecipeRepositoryInterface interface {
 	SavedRecipe(saved models.SavedRecipe) (*mongo.InsertOneResult, error)
-	UnsavedRecipe(id primitive.ObjectID) (*mongo.DeleteResult, error)
+	UnsavedRecipe(userId primitive.ObjectID, recipeId primitive.ObjectID) (*mongo.DeleteResult, error)
 	GetRecipesSavedByUser(idUser primitive.ObjectID) ([]models.SavedRecipe, error)
 	GetSavedCountByRecipe(idRecipe primitive.ObjectID) (int64, error)
 	GetTop10MostSaved() ([]models.TopSavedRecipe, error)
+	GetSavedRecipesSavedByUserAndRecipe(idUser primitive.ObjectID, idRecipe primitive.ObjectID) ([]models.SavedRecipe, error)
 }
 
 type SavedRecipeRepository struct {
@@ -31,10 +32,13 @@ func (repository *SavedRecipeRepository) SavedRecipe(saved models.SavedRecipe) (
 	return collection.InsertOne(context.TODO(), saved)
 }
 
-func (repository *SavedRecipeRepository) UnsavedRecipe(id primitive.ObjectID) (*mongo.DeleteResult, error) {
+func (repository *SavedRecipeRepository) UnsavedRecipe(userId primitive.ObjectID, recipeId primitive.ObjectID) (*mongo.DeleteResult, error) {
 	collection := repository.db.GetClient().Database("Burned").Collection("SavedRecipes")
-	filter := bson.M{"_id": id}
-	return collection.DeleteOne(context.TODO(), filter)
+
+	filter := bson.M{"userId": userId, "recipeId": recipeId}
+
+	return collection.DeleteMany(context.TODO(), filter)
+
 }
 
 func (repository *SavedRecipeRepository) GetRecipesSavedByUser(idUser primitive.ObjectID) ([]models.SavedRecipe, error) {
@@ -104,4 +108,25 @@ func (repository *SavedRecipeRepository) GetTop10MostSaved() ([]models.TopSavedR
 	}
 
 	return result, nil
+}
+
+func (repository *SavedRecipeRepository) GetSavedRecipesSavedByUserAndRecipe(idUser primitive.ObjectID, idRecipe primitive.ObjectID) ([]models.SavedRecipe, error) {
+	collection := repository.db.GetClient().Database("Burned").Collection("SavedRecipes")
+	filter := bson.M{
+		"userId":   idUser,
+		"recipeId": idRecipe,
+	}
+	cursor, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+
+	var savedRecipes []models.SavedRecipe
+
+	if err = cursor.All(context.TODO(), &savedRecipes); err != nil {
+		return nil, err
+	}
+
+	return savedRecipes, nil
 }

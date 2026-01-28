@@ -37,7 +37,8 @@ type AuthResponse struct {
 }
 
 type UpdatePasswordRequest struct {
-	Password string `json:"password" binding:"required,min=8,max=72"`
+	NewPassword string `json:"newPassword" binding:"required,min=8,max=72"`
+	OldPassword string `json:"oldPassword" binding:"required,min=8,max=72"`
 }
 
 func UserRequestToModel(dto RegisterRequest) models.User {

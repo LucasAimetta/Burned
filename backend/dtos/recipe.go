@@ -30,15 +30,18 @@ type RecipeResponse struct {
 	CreatedAt      time.Time           `json:"createdAt"`
 	UpdatedAt      time.Time           `json:"updatedAt"`
 	ID             string              `json:"id"`
+	UserName       string              `json:"userName"`
+	UserID         string              `json:"userId"`
+	AverageRating  float64             `json:"averageRating"`
 }
 
 type RecipeSearchRequest struct {
-	Title          string              `json:"title" binding:"omitempty,max=120"`
-	Description    string              `json:"description" binding:"omitempty,max=350"`
-	Visibility     string              `json:"visibility" binding:"omitempty,oneof=public private"`
-	TotalTime      int                 `json:"totalTime" binding:"omitempty"`
-	DificultyLevel string              `json:"dificultyLevel" binding:"omitempty,oneof=easy medium hard"`
-	Ingredients    []models.Ingredient `json:"ingredients" binding:"omitempty"`
+	Title          string   `json:"title" binding:"omitempty,max=120"`
+	Description    string   `json:"description" binding:"omitempty,max=350"`
+	Visibility     string   `json:"visibility" binding:"omitempty,oneof=public private"`
+	TotalTime      int      `json:"totalTime" binding:"omitempty"`
+	DificultyLevel string   `json:"dificultyLevel" binding:"omitempty,oneof=easy medium hard"`
+	Tags           []string `json:"tags" binding:"omitempty"`
 }
 
 func RecipeRequestToModel(dto RecipeRequest) models.Recipe {
@@ -69,5 +72,7 @@ func RecipeModelToResponse(model models.Recipe) RecipeResponse {
 	response.TotalTime = model.TotalTime
 	response.Title = model.Title
 	response.Description = model.Description
+	response.UserID = model.UserID.Hex()
+	response.AverageRating = model.AverageRating
 	return response
 }

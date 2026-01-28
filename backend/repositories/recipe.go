@@ -5,10 +5,12 @@ import (
 	"burned/backend/dtos"
 	"burned/backend/models"
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RecipeRepositoryInterface interface {
@@ -18,6 +20,8 @@ type RecipeRepositoryInterface interface {
 	GetRecipes(filters dtos.RecipeSearchRequest) ([]models.Recipe, error)
 	GetRecipeById(id primitive.ObjectID) (models.Recipe, error)
 	GetRecipesByUser(id primitive.ObjectID) ([]models.Recipe, error)
+	GetAll() ([]models.Recipe, error)
+	GetTopRecipesLimit(limit int) ([]models.Recipe, error)
 }
 
 type RecipeRepository struct {
@@ -51,6 +55,7 @@ func (repository *RecipeRepository) UpdateRecipe(recipe models.Recipe) (*mongo.U
 		"ingredients":    recipe.Ingredients,
 		"image":          recipe.Image,
 		"updatedAt":      recipe.UpdatedAt,
+		"averageRating":  recipe.AverageRating,
 	}}
 	return collection.UpdateOne(context.TODO(), filter, update)
 }
@@ -60,62 +65,73 @@ func (repository *RecipeRepository) DeleteRecipe(id primitive.ObjectID) (*mongo.
 	filter := bson.M{"_id": id}
 	return collection.DeleteOne(context.TODO(), filter)
 }
-
 func (repository *RecipeRepository) GetRecipes(filters dtos.RecipeSearchRequest) ([]models.Recipe, error) {
 	collection := repository.db.GetClient().Database("Burned").Collection("Recipe")
-	//verificamos si envio los parametros para filtrar y agregamos el filtro al map de filtros
+
 	filtersMap := bson.M{}
+	filtersMap["visibility"] = "public"
+	// Filtros básicos
+	if filters.Title != "" {
+		filtersMap["title"] = bson.M{"$regex": filters.Title, "$options": "i"}
+	}
 	if filters.Description != "" {
 		filtersMap["description"] = bson.M{"$regex": filters.Description, "$options": "i"}
 	}
 	if filters.DificultyLevel != "" {
 		filtersMap["dificultyLevel"] = bson.M{"$regex": filters.DificultyLevel, "$options": "i"}
 	}
-	if filters.Title != "" {
-		filtersMap["title"] = bson.M{"$regex": filters.Title, "$options": "i"}
-	}
 	if filters.TotalTime != 0 {
-		filtersMap["totalTime"] = bson.M{"$gte": filters.TotalTime}
+		filtersMap["totalTime"] = bson.M{"$lte": filters.TotalTime}
 	}
-	if filters.Visibility != "" {
-		filtersMap["visibility"] = bson.M{"$regex": filters.Visibility, "$options": "i"}
-	}
-	//Busqueda de las recetas que contengan los ingredientes que envio
-	//Si tienen algun elemento
-	if len(filters.Ingredients) > 0 {
-		var allConditions []bson.M
-		//Se crea un array de filtros, estos filtros son por parcialidad en el nombre
-		for _, ing := range filters.Ingredients {
-			allConditions = append(allConditions, bson.M{
-				"$elemMatch": bson.M{
-					"name": bson.M{
-						"$regex":   ing,
-						"$options": "i",
-					},
-				},
+	if len(filters.Tags) > 0 {
+		var tagConditions []bson.M
+		for _, tag := range filters.Tags {
+
+			tagConditions = append(tagConditions, bson.M{
+				"tags": bson.M{"$regex": tag, "$options": "i"},
 			})
 		}
-		//Agrega al map original, el filtro por ingredientes y solo obtiene aquellas recetas que contengan TODOS los
-		filtersMap["ingredients"] = bson.M{
-			"$all": allConditions,
-		}
+
+		filtersMap["$and"] = tagConditions
 	}
 
 	cursor, err := collection.Find(context.TODO(), filtersMap)
 	if err != nil {
 		return nil, err
 	}
-
 	defer cursor.Close(context.Background())
+
 	var recipes []models.Recipe
-	for cursor.Next(context.Background()) {
-		var recipe models.Recipe
-		err := cursor.Decode(&recipe)
-		if err != nil {
-			continue
-		}
-		recipes = append(recipes, recipe)
+	if err = cursor.All(context.Background(), &recipes); err != nil {
+		return nil, err
 	}
+	return recipes, nil
+}
+
+func (repository *RecipeRepository) GetAll() ([]models.Recipe, error) {
+	collection := repository.db.GetClient().Database("Burned").Collection("Recipe")
+
+	// Contexto (puedes pasarlo por parámetro o crear uno aquí)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 1. Definimos las opciones de ordenamiento AQUÍ
+	// "rating": -1 significa Descendente (Mayor a menor)
+	// Si tu campo se llama diferente en Mongo (ej: "average_rating"), cámbialo aquí.
+	opts := options.Find().SetSort(bson.D{{"rating", -1}})
+
+	// 2. Pasamos las opciones al Find
+	cursor, err := collection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var recipes []models.Recipe
+	if err = cursor.All(ctx, &recipes); err != nil {
+		return nil, err
+	}
+
 	return recipes, nil
 }
 
@@ -164,6 +180,30 @@ func (repository *RecipeRepository) GetRecipesSavedByUser(id primitive.ObjectID)
 			return nil, err
 		}
 		recipes = append(recipes, recipe)
+	}
+
+	return recipes, nil
+}
+
+func (repository *RecipeRepository) GetTopRecipesLimit(limit int) ([]models.Recipe, error) {
+	collection := repository.db.GetClient().Database("Burned").Collection("Recipe")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	opts := options.Find().SetSort(bson.D{{"averageRating", -1}}).SetLimit(int64(limit))
+
+	filter := bson.M{"visibility": "public"}
+
+	cursor, err := collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var recipes []models.Recipe
+	if err = cursor.All(ctx, &recipes); err != nil {
+		return nil, err
 	}
 
 	return recipes, nil

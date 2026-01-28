@@ -6,6 +6,7 @@ import (
 	"burned/backend/models"
 	"context"
 	"errors"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -14,7 +15,7 @@ import (
 )
 
 type RatingRepositoryInterface interface {
-	UpsertRating(model models.Rating) (*mongo.UpdateResult, error)
+	UpsertRating(model models.Rating) (float64, error)
 	GetRatingByUserAndRecipe(model models.Rating) (models.Rating, error)
 	GetRatingByRecipe(recipeId primitive.ObjectID) (dtos.Avg, error)
 }
@@ -26,9 +27,10 @@ type RatingRepository struct {
 func NewRatingRepository(db database.DB) *RatingRepository {
 	return &RatingRepository{db: db}
 }
-
-func (repository *RatingRepository) UpsertRating(model models.Rating) (*mongo.UpdateResult, error) {
-	collection := repository.db.GetClient().Database("Burned").Collection("Rating")
+func (repository *RatingRepository) UpsertRating(model models.Rating) (float64, error) {
+	ctx := context.TODO()
+	ratingCollection := repository.db.GetClient().Database("Burned").Collection("Rating")
+	recipeCollection := repository.db.GetClient().Database("Burned").Collection("Recipe")
 
 	filter := bson.M{
 		"userId":   model.UserID,
@@ -48,7 +50,49 @@ func (repository *RatingRepository) UpsertRating(model models.Rating) (*mongo.Up
 	}
 
 	opts := options.Update().SetUpsert(true)
-	return collection.UpdateOne(context.TODO(), filter, update, opts)
+	_, err := ratingCollection.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		return 0, fmt.Errorf("error guardando rating: %v", err)
+	}
+	matchStage := bson.D{{"$match", bson.D{{"recipeId", model.RecipeID}}}}
+
+	groupStage := bson.D{
+		{"$group", bson.D{
+			{"_id", "$recipeId"},
+			{"averageRating", bson.D{{"$avg", "$stars"}}},
+		}},
+	}
+
+	cursor, err := ratingCollection.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage})
+	if err != nil {
+		return 0, fmt.Errorf("error calculando promedio: %v", err)
+	}
+	defer cursor.Close(ctx)
+
+	var results []struct {
+		AverageRating float64 `bson:"averageRating"`
+	}
+
+	if err = cursor.All(ctx, &results); err != nil {
+		return 0, err
+	}
+
+	newAverage := 0.0
+	if len(results) > 0 {
+		newAverage = results[0].AverageRating
+	}
+
+	_, err = recipeCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": model.RecipeID},
+		bson.M{"$set": bson.M{"rating": newAverage}},
+	)
+
+	if err != nil {
+		return 0, fmt.Errorf("error actualizando promedio en receta: %v", err)
+	}
+
+	return newAverage, nil
 }
 
 func (repository *RatingRepository) GetRatingByUserAndRecipe(model models.Rating) (models.Rating, error) {

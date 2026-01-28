@@ -42,9 +42,15 @@ func (handler *SavedRecipeHandler) SavedRecipe(c *gin.Context) {
 }
 
 func (handler *SavedRecipeHandler) UnsavedRecipe(c *gin.Context) {
-	id := c.Param("id")
+	recipeID := c.Param("id")
+	userID, _ := c.Get("user_id")
+	userIdStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Invalid user id type"})
+		return
+	}
 
-	err := handler.service.UnsavedRecipe(id)
+	err := handler.service.UnsavedRecipe(userIdStr, recipeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
@@ -81,7 +87,7 @@ func (handler *SavedRecipeHandler) GetSavedCountByRecipe(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"Count": count})
+	c.JSON(http.StatusOK, gin.H{"count": count})
 }
 
 func (handler *SavedRecipeHandler) GetTop10MostSaved(c *gin.Context) {

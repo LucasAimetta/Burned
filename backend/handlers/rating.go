@@ -35,13 +35,16 @@ func (handler *RatingHandler) RateRecipe(c *gin.Context) {
 
 	id := c.Param("id")
 
-	result, err := handler.service.RateRecipe(req, id, userIdStr)
+	newAverage, err := handler.service.RateRecipe(req, id, userIdStr)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar voto: " + err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, result)
 
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "Voto guardado exitosamente",
+		"new_rating": newAverage,
+	})
 }
 
 func (handler *RatingHandler) GetRatingByRecipe(c *gin.Context) {

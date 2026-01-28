@@ -6,11 +6,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Rating struct {
+type Comment struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	UserID    primitive.ObjectID `bson:"userId" json:"userId"`
+	UserName  string             `bson:"userName" json:"userName"`
 	RecipeID  primitive.ObjectID `bson:"recipeId" json:"recipeId"`
-	Stars     float64            `bson:"stars" json:"stars"`
+	Text      string             `bson:"text" json:"text"`
 	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
-	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
 }

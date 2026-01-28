@@ -6,12 +6,12 @@ import (
 )
 
 type RateRecipeRequest struct {
-	Stars int `json:"stars" binding:"required,gte=1,lte=5"`
+	Stars float64 `json:"stars" binding:"required,gte=1,lte=5"`
 }
 
 type RateRecipeResponse struct {
 	RecipeID  string    `json:"recipeId"`
-	Stars     int       `json:"stars" binding:"required,gte=1,lte=5"`
+	Stars     float64   `json:"stars" binding:"required,gte=1,lte=5"`
 	ID        string    `json:"Id"`
 	UserID    string    `json:"userId"`
 	CreatedAt time.Time `json:"createdAt"`

@@ -31,4 +31,5 @@ type Recipe struct {
 	Tags           []string           `bson:"tags" json:"tags"`
 	Ingredients    []Ingredient       `bson:"ingredients" json:"ingredients"`
 	Image          string             `bson:"image" json:"image"`
+	AverageRating  float64            `bson:"averageRating" json:"averageRating"`
 }

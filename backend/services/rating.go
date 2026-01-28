@@ -51,7 +51,19 @@ func (service *RatingService) RateRecipe(dto dtos.RateRecipeRequest, recipeId st
 	if err != nil {
 		return dtos.RateRecipeResponse{}, errors.New("Internal server error")
 	}
-
+	recipe, err := service.recipeRepository.GetRecipeById(recipeOID)
+	if err != nil {
+		return dtos.RateRecipeResponse{}, errors.New("Recipe not found")
+	}
+	avg, err := service.ratingRepository.GetRatingByRecipe(recipeOID)
+	if err != nil {
+		return dtos.RateRecipeResponse{}, errors.New("Internal server error")
+	}
+	recipe.AverageRating = avg.Avg
+	_, err = service.recipeRepository.UpdateRecipe(recipe)
+	if err != nil {
+		return dtos.RateRecipeResponse{}, errors.New("Internal server error")
+	}
 	response := dtos.RatingModelToResponse(result)
 	return response, nil
 }

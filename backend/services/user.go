@@ -102,19 +102,24 @@ func (service *UserService) UpdatePassword(id string, password dtos.UpdatePasswo
 	if err != nil {
 		return dtos.UserResponse{}, errors.New("user not found")
 	}
+	//verificamos que la contraseña que ingreso sea igual a la guardada
+	if !auth.CheckPasswordHash(password.OldPassword, model.HashedPassword) {
+		return dtos.UserResponse{}, errors.New("wrong credentials")
+	}
+
 	//verificamos que la nueva contraseña sea valida
-	if !auth.ValidatePassword(password.Password) {
+	if !auth.ValidatePassword(password.NewPassword) {
 		return dtos.UserResponse{}, errors.New("password does not meet the security requirements")
 	}
-	if auth.CheckPasswordHash(password.Password, model.HashedPassword) {
+	if auth.CheckPasswordHash(password.NewPassword, model.HashedPassword) {
 		return dtos.UserResponse{}, errors.New("the new password cannot be the same as the current one") //Si es true, esta tratando de cambiar la contraseña por la misma que estaba guardada
 	}
 	//hasheamos la contraseña y la guadamos en la bdd
-	password.Password, err = auth.HashPassword(password.Password)
+	password.NewPassword, err = auth.HashPassword(password.NewPassword)
 	if err != nil {
 		return dtos.UserResponse{}, errors.New("internal server error")
 	}
-	_, err = service.repo.UpdatePassword(model, password.Password)
+	_, err = service.repo.UpdatePassword(model, password.NewPassword)
 	if err != nil {
 		return dtos.UserResponse{}, errors.New("internal server error")
 	}
