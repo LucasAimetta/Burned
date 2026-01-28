@@ -23,6 +23,7 @@ var (
 	UserHandler        *handlers.UserHandler
 	AuthHandler        *handlers.AuthHandler
 	RatingHandler      *handlers.RatingHandler
+	CommentHandler     *handlers.CommentHandler
 )
 
 func main() {
@@ -62,6 +63,7 @@ func dependencies() {
 		recipeRepo      repositories.RecipeRepositoryInterface
 		savedRecipeRepo repositories.SavedRecipeRepositoryInterface
 		ratingRepo      repositories.RatingRepositoryInterface
+		commentRepo     repositories.CommentRepositoryInterface
 	)
 
 	var (
@@ -69,6 +71,7 @@ func dependencies() {
 		recipeService      services.RecipeServiceInterface
 		savedRecipeService services.SavedRecipeServiceInterface
 		ratingService      services.RatingServiceInterface
+		commentService     services.CommentServiceInterface
 	)
 
 	// Conexión a base de datos
@@ -79,56 +82,64 @@ func dependencies() {
 	savedRecipeRepo = repositories.NewSavedRecipeRepository(db)
 	recipeRepo = repositories.NewRecipeRepository(db, savedRecipeRepo)
 	ratingRepo = repositories.NewRatingRepository(db)
-
+	commentRepo = repositories.NewCommentRepository(db)
 	// Servicios
 	userService = services.NewUserService(userRepo)
-	recipeService = services.NewRecipeService(recipeRepo)
-	savedRecipeService = services.NewSavedRecipeService(savedRecipeRepo)
+	recipeService = services.NewRecipeService(recipeRepo, userRepo)
+	savedRecipeService = services.NewSavedRecipeService(savedRecipeRepo, recipeRepo)
 	ratingService = services.NewRatingService(ratingRepo, recipeRepo)
-
+	commentService = services.NewCommentService(commentRepo, userRepo)
 	// Handlers
 	AuthHandler = handlers.NewAuthHandler(userService)
 	RecipeHandler = handlers.NewRecipeHandler(recipeService)
 	SavedRecipeHandler = handlers.NewSavedRecipeHandler(savedRecipeService)
 	UserHandler = handlers.NewUserHandler(userService)
 	RatingHandler = handlers.NewRatingHandler(ratingService)
+	CommentHandler = handlers.NewCommentHandler(commentService)
 }
 
 func mappingRoutes() {
-	//RUTAS PUBLICAS	(Invitados)
+	// --- RUTAS PÚBLICAS
 	router.POST("/login", AuthHandler.LogIn)
 	router.POST("/register", AuthHandler.Register)
 
-	router.GET("/recipes", RecipeHandler.GetRecipes)
-	router.GET("/recipes/:id", RecipeHandler.GetRecipeById)
-	router.GET("/recipes/top", SavedRecipeHandler.GetTop10MostSaved)
-	router.GET("/recipes/count/:id", SavedRecipeHandler.GetSavedCountByRecipe)
-
 	router.POST("/get-rate/:id", RatingHandler.GetRatingByRecipe)
-
 	router.GET("/auth/google/login", AuthHandler.GoogleLogin)
 	router.GET("/auth/google/callback", AuthHandler.GoogleCallback)
 
-	// RUTAS PRIVADAS (Requieren autenticación)
+	recipes := router.Group("/recipes")
+	{
+		recipes.GET("/search", RecipeHandler.QuickSearch)
+		recipes.POST("/search", RecipeHandler.GetRecipes)
+		recipes.GET("/top", RecipeHandler.GetTopRecipes)
+		recipes.GET("/count/:id", SavedRecipeHandler.GetSavedCountByRecipe)
+		recipes.GET("", RecipeHandler.GetAll)
+		recipes.GET("/:id", RecipeHandler.GetRecipeById)
+		recipes.GET("/comments/:recipeId", CommentHandler.GetCommentsByRecipe)
+	}
+
+	// --- RUTAS PRIVADAS
 	priv := router.Group("/")
 	priv.Use(middlewares.AuthMiddleware())
 	{
+
 		priv.PUT("/user", UserHandler.UpdateUser)
 		priv.PUT("/user/password", UserHandler.UpdatePassword)
 		priv.DELETE("/user", UserHandler.DeleteUser)
 		priv.GET("/user/me", UserHandler.GetUserById)
-		priv.GET("/user/name/:name", UserHandler.GetUserByName)
-		priv.GET("/user/email/:email", UserHandler.GetUserByEmail)
 
 		priv.POST("/recipes", RecipeHandler.CreateRecipe)
-		priv.PUT("/recipes", RecipeHandler.UpdateRecipe)
+		priv.PUT("/recipes/:id", RecipeHandler.UpdateRecipe)
 		priv.DELETE("/recipes/:id", RecipeHandler.DeleteRecipe)
 		priv.GET("/user/recipes", RecipeHandler.GetRecipesByUser)
 
 		priv.POST("/saved-recipes", SavedRecipeHandler.SavedRecipe)
 		priv.DELETE("/saved-recipes/:id", SavedRecipeHandler.UnsavedRecipe)
 		priv.GET("/saved-recipes", SavedRecipeHandler.GetRecipesSavedByUser)
-
 		priv.POST("/rate-recipe/:id", RatingHandler.RateRecipe)
+
+		priv.DELETE("/comments/:id", CommentHandler.DeleteComment)
+		priv.GET("/comments/:id", CommentHandler.GetCommentsById)
+		priv.POST("/comments", CommentHandler.CreateComment)
 	}
 }
