@@ -88,7 +88,7 @@ func dependencies() {
 	recipeService = services.NewRecipeService(recipeRepo, userRepo)
 	savedRecipeService = services.NewSavedRecipeService(savedRecipeRepo, recipeRepo)
 	ratingService = services.NewRatingService(ratingRepo, recipeRepo)
-	commentService = services.NewCommentService(commentRepo, userRepo)
+	commentService = services.NewCommentService(commentRepo, userRepo, recipeRepo)
 	// Handlers
 	AuthHandler = handlers.NewAuthHandler(userService)
 	RecipeHandler = handlers.NewRecipeHandler(recipeService)

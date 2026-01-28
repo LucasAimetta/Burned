@@ -20,10 +20,11 @@ type CommentServiceInterface interface {
 type CommentService struct {
 	commentRepo repositories.CommentRepositoryInterface
 	userRepo    repositories.UserRepositoryInterface
+	recipeRepo  repositories.RecipeRepositoryInterface
 }
 
-func NewCommentService(repo repositories.CommentRepositoryInterface, userRepo repositories.UserRepositoryInterface) *CommentService {
-	return &CommentService{commentRepo: repo, userRepo: userRepo}
+func NewCommentService(repo repositories.CommentRepositoryInterface, userRepo repositories.UserRepositoryInterface, recipeRepo repositories.RecipeRepositoryInterface) *CommentService {
+	return &CommentService{commentRepo: repo, userRepo: userRepo, recipeRepo: recipeRepo}
 }
 
 func (service *CommentService) CreateComment(comment dtos.CommentRequest, idUser string) (dtos.CommentResponse, error) {
@@ -61,29 +62,36 @@ func (service *CommentService) CreateComment(comment dtos.CommentRequest, idUser
 	return response, nil
 }
 func (service *CommentService) DeleteComment(commentId string, requesterId string, requesterRole string) error {
+
 	commentOid, err := primitive.ObjectIDFromHex(commentId)
 	if err != nil {
 		return errors.New("invalid id")
 	}
-	userOid, err := primitive.ObjectIDFromHex(commentId)
+	userOid, err := primitive.ObjectIDFromHex(requesterId)
 	if err != nil {
 		return errors.New("invalid id")
 	}
-
 	comment, err := service.commentRepo.GetCommentsById(commentOid)
 	if err != nil {
 		return errors.New("comment not found")
 	}
 
+	recipe, err := service.recipeRepo.GetRecipeById(comment.RecipeID)
+	if err != nil {
+		return errors.New("associated recipe not found")
+	}
+
 	isOwner := comment.UserID == userOid
 	isAdmin := requesterRole == "admin"
+	isRecipeOwner := recipe.UserID == userOid
 
-	if !isAdmin && !isOwner {
+	if !isAdmin && !isOwner && !isRecipeOwner {
 		return errors.New("unauthorized to delete this comment")
 	}
+
 	result, err := service.commentRepo.DeleteComment(commentOid)
-	if result.DeletedCount == 0 {
-		return errors.New("comment not found")
+	if err != nil || result.DeletedCount == 0 {
+		return errors.New("could not delete comment")
 	}
 	return nil
 }
