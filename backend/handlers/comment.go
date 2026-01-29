@@ -76,7 +76,7 @@ func (handler *CommentHandler) GetCommentsByRecipe(c *gin.Context) {
 func (handler *CommentHandler) GetCommentsById(c *gin.Context) {
 	id := c.Param("id")
 
-	result, err := handler.service.GetCommentsById(id)
+	result, err := handler.service.GetCommentById(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return

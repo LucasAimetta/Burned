@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"burned/backend/auth"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
+		fmt.Println("DEBUG MIDDLEWARE: Recibido header:", authHeader)
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token de autorización requerido"})
 			c.Abort()

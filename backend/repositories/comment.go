@@ -58,16 +58,11 @@ func (repository *CommentRepository) GetCommentsByRecipe(recipeId primitive.Obje
 func (repository *CommentRepository) GetCommentsById(Id primitive.ObjectID) (models.Comment, error) {
 	collection := repository.db.GetClient().Database("Burned").Collection("Comment")
 	filter := bson.M{"_id": Id}
-
-	cursor, err := collection.Find(context.TODO(), filter)
+	var comment models.Comment
+	err := collection.FindOne(context.TODO(), filter).Decode(&comment)
 	if err != nil {
 		return models.Comment{}, err
 	}
-	defer cursor.Close(context.TODO())
 
-	var comments models.Comment
-	if err = cursor.All(context.TODO(), &comments); err != nil {
-		return models.Comment{}, err
-	}
-	return comments, nil
+	return comment, nil
 }

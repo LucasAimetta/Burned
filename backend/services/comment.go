@@ -15,7 +15,7 @@ type CommentServiceInterface interface {
 	CreateComment(comment dtos.CommentRequest, idUser string) (dtos.CommentResponse, error)
 	DeleteComment(commentId string, requesterId string, requesterRole string) error
 	GetCommentsByRecipe(recipeId string) ([]dtos.CommentResponse, error)
-	GetCommentsById(Id string) (dtos.CommentResponse, error)
+	GetCommentById(Id string) (dtos.CommentResponse, error)
 }
 
 type CommentService struct {
@@ -74,7 +74,7 @@ func (service *CommentService) DeleteComment(commentId string, requesterId strin
 		fmt.Println("DEBUG ERROR: Fallo al convertir requesterId a hex")
 		return errors.New("invalid id")
 	}
-	comment, err := service.commentRepo.GetCommentsById(commentOid)
+	comment, err := service.commentRepo.GetCommentById(commentOid)
 	if err != nil {
 		fmt.Printf("DEBUG ERROR: Comentario no encontrado en DB: %v\n", err)
 		return errors.New("comment not found")
@@ -120,12 +120,12 @@ func (service *CommentService) GetCommentsByRecipe(recipeId string) ([]dtos.Comm
 
 }
 
-func (service *CommentService) GetCommentsById(Id string) (dtos.CommentResponse, error) {
+func (service *CommentService) GetCommentById(Id string) (dtos.CommentResponse, error) {
 	commentId, err := primitive.ObjectIDFromHex(Id)
 	if err != nil {
 		return dtos.CommentResponse{}, errors.New("invalid id")
 	}
-	result, err := service.commentRepo.GetCommentsById(commentId)
+	result, err := service.commentRepo.GetCommentById(commentId)
 	if err != nil {
 		return dtos.CommentResponse{}, errors.New("internal server error")
 	}
