@@ -1,20 +1,22 @@
 import axios from 'axios';
 
+// Ajusta la URL base según tu entorno
 const api = axios.create({
-  // Lógica inteligente:
-  // 1. Si existe la variable de entorno (en Render), usa esa.
-  // 2. Si no existe (en tu PC), usa localhost.
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
-  withCredentials: true
+  baseURL: 'http://localhost:8080', 
 });
 
-// Esto es para que todas las peticiones incluyan el Token si el usuario ya se logueó
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-});
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export default api;

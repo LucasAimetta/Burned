@@ -7,7 +7,9 @@ import MyRecipes from './components/MyRecipes';
 import Navbar from './components/Navbar';
 import EditRecipe from './components/EditRecipe';
 import Profile from './components/Profile';
+import Footer from './components/Footer'; // <--- 1. IMPORTARLO AQUÍ
 
+// --- LAYOUT PRIVADO MODIFICADO ---
 const PrivateLayout = ({ children }) => {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   
@@ -16,18 +18,33 @@ const PrivateLayout = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    // 2. AÑADIMOS 'flex flex-col' PARA QUE EL CONTENIDO OCUPE TODO EL ALTO
+    <div className="min-h-screen bg-zinc-950 flex flex-col">
       <Navbar />
-      {children}
+      
+      {/* 3. WRAPPER CON 'flex-1': Empuja el footer hacia abajo */}
+      <main className="flex-1">
+        {children}
+      </main>
+
+      {/* 4. FOOTER AL FINAL */}
+      <Footer />
     </div>
   );
 };
 
+// --- LAYOUT PÚBLICO MODIFICADO ---
 const PublicLayout = ({ children }) => {
   return (
-    <div className="min-h-screen bg-zinc-950">
+    // Mismas clases CSS para mantener la consistencia
+    <div className="min-h-screen bg-zinc-950 flex flex-col">
       <Navbar />
-      {children}
+      
+      <main className="flex-1">
+        {children}
+      </main>
+
+      <Footer />
     </div>
   );
 };
@@ -36,7 +53,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Login es independiente */}
+        {/* Login se queda SIN footer (Correcto) */}
         <Route path="/login" element={<Login />} />
         
         {/* --- ZONA PÚBLICA --- */}
@@ -60,7 +77,7 @@ function App() {
         } />
 
         <Route path="/profile" element={
-            <PrivateLayout> {/* CORREGIDO: Usamos PrivateLayout aquí también */}
+            <PrivateLayout>
                 <Profile />
             </PrivateLayout>
         } />
@@ -77,7 +94,6 @@ function App() {
           </PrivateLayout>
         } />
 
-        {/* Cualquier ruta desconocida va al inicio */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
