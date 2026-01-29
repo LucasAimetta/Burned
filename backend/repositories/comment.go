@@ -15,7 +15,7 @@ type CommentRepositoryInterface interface {
 	CreateComment(comment models.Comment) (*mongo.InsertOneResult, error)
 	DeleteComment(id primitive.ObjectID) (*mongo.DeleteResult, error)
 	GetCommentsByRecipe(recipeId primitive.ObjectID) ([]models.Comment, error)
-	GetCommentsById(Id primitive.ObjectID) (models.Comment, error)
+	GetCommentById(Id primitive.ObjectID) (models.Comment, error)
 }
 
 type CommentRepository struct {
@@ -55,7 +55,7 @@ func (repository *CommentRepository) GetCommentsByRecipe(recipeId primitive.Obje
 	return comments, nil
 }
 
-func (repository *CommentRepository) GetCommentsById(Id primitive.ObjectID) (models.Comment, error) {
+func (repository *CommentRepository) GetCommentById(Id primitive.ObjectID) (models.Comment, error) {
 	collection := repository.db.GetClient().Database("Burned").Collection("Comment")
 	filter := bson.M{"_id": Id}
 	var comment models.Comment

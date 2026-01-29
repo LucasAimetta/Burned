@@ -73,7 +73,7 @@ func (handler *CommentHandler) GetCommentsByRecipe(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-func (handler *CommentHandler) GetCommentsById(c *gin.Context) {
+func (handler *CommentHandler) GetCommentById(c *gin.Context) {
 	id := c.Param("id")
 
 	result, err := handler.service.GetCommentById(id)
