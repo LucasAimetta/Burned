@@ -36,10 +36,8 @@ func main() {
 	// CONFIGURACIÓN DE CORS
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			"http://localhost:3000",
-			"http://localhost:5173",
-			os.Getenv("FRONTEND_URL"),              // <--- AGREGA ESTO IMPORTANTE
-			"https://burned-frontend.onrender.com", // Opcional: Pon aquí tu URL exacta de frontend si prefieres hardcodearla
+			"http://localhost:5173",   // Para tus pruebas locales (Vite)
+			os.Getenv("FRONTEND_URL"), // Tu URL real de producción
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},

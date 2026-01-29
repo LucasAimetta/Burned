@@ -1,22 +1,19 @@
 import axios from 'axios';
 
-// Ajusta la URL base según tu entorno
 const api = axios.create({
-  baseURL: 'http://localhost:8080', 
+  // Cambia localhost por tu URL de producción
+  baseURL: 'https://burned.onrender.com', 
 });
 
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default api;
