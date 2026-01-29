@@ -33,7 +33,8 @@ func (repository *CommentRepository) CreateComment(comment models.Comment) (*mon
 
 func (repository *CommentRepository) DeleteComment(id primitive.ObjectID) (*mongo.DeleteResult, error) {
 	collection := repository.db.GetClient().Database("Burned").Collection("Comment")
-	return collection.DeleteOne(context.TODO(), id)
+	filter := bson.M{"_id": id}
+	return collection.DeleteOne(context.TODO(), filter)
 }
 
 func (repository *CommentRepository) GetCommentsByRecipe(recipeId primitive.ObjectID) ([]models.Comment, error) {
