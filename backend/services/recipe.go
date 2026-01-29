@@ -11,8 +11,8 @@ import (
 
 type RecipeServiceInterface interface {
 	CreateRecipe(recipe dtos.RecipeRequest, idUser string) (dtos.RecipeResponse, error)
-	UpdateRecipe(recipe dtos.RecipeRequest, idUser string) (dtos.RecipeResponse, error)
-	DeleteRecipe(id string) error
+	UpdateRecipe(recipe dtos.RecipeRequest, id string, requesterId string, requesterRole string) (dtos.RecipeResponse, error)
+	DeleteRecipe(id string, requesterId string, requesterRole string) error
 	GetRecipes(filters dtos.RecipeSearchRequest) ([]dtos.RecipeResponse, error)
 	GetRecipeById(id string) (dtos.RecipeResponse, error)
 	GetRecipesByUser(id string) ([]dtos.RecipeResponse, error)
@@ -56,7 +56,7 @@ func (service *RecipeService) CreateRecipe(recipe dtos.RecipeRequest, idUser str
 	recipeResponse.UserName = user.Name
 	return recipeResponse, nil
 }
-func (service *RecipeService) UpdateRecipe(recipe dtos.RecipeRequest, id string) (dtos.RecipeResponse, error) {
+func (service *RecipeService) UpdateRecipe(recipe dtos.RecipeRequest, id string, requesterId string, requesterRole string) (dtos.RecipeResponse, error) {
 	if recipe.Description == "" || recipe.DificultyLevel == "" || recipe.Ingredients == nil || recipe.Step == nil || recipe.Title == "" || recipe.TotalTime <= 0 || recipe.Visibility == "" {
 		return dtos.RecipeResponse{}, errors.New("data entered incorrectly")
 	}
@@ -64,11 +64,18 @@ func (service *RecipeService) UpdateRecipe(recipe dtos.RecipeRequest, id string)
 	if err != nil {
 		return dtos.RecipeResponse{}, errors.New("invalid id")
 	}
-
 	currentRecipe, err := service.recipeRepo.GetRecipeById(oid)
 	if err != nil {
 		return dtos.RecipeResponse{}, errors.New("recipe not found")
 	}
+
+	isOwner := currentRecipe.UserID.Hex() == requesterId
+	isAdmin := requesterRole == "admin"
+
+	if !isOwner && !isAdmin {
+		return dtos.RecipeResponse{}, errors.New("unauthorized: you cannot edit this recipe")
+	}
+
 	recipeModel := dtos.RecipeRequestToModel(recipe)
 	recipeModel.ID = oid
 	recipeModel.UpdatedAt = time.Now()
@@ -86,10 +93,21 @@ func (service *RecipeService) UpdateRecipe(recipe dtos.RecipeRequest, id string)
 	return recipeResponse, nil
 }
 
-func (service *RecipeService) DeleteRecipe(id string) error {
+func (service *RecipeService) DeleteRecipe(id string, requesterId string, requesterRole string) error {
 	oid, ok := primitive.ObjectIDFromHex(id)
 	if ok != nil {
 		return errors.New("invalid id")
+	}
+	currentRecipe, err := service.recipeRepo.GetRecipeById(oid)
+	if err != nil {
+		return errors.New("recipe not found")
+	}
+
+	isOwner := currentRecipe.UserID.Hex() == requesterId
+	isAdmin := requesterRole == "admin"
+
+	if !isOwner && !isAdmin {
+		return errors.New("unauthorized: you cannot edit this recipe")
 	}
 	//verificamos la cantidad de documentos eliminados, si es 0 ha habido error
 	result, err := service.recipeRepo.DeleteRecipe(oid)

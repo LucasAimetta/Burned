@@ -54,7 +54,9 @@ func (handler *RecipeHandler) UpdateRecipe(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
-	result, err := handler.service.UpdateRecipe(req, id)
+	requesterId, _ := c.Get("user_id")
+	requesterRole, _ := c.Get("role")
+	result, err := handler.service.UpdateRecipe(req, id, requesterId.(string), requesterRole.(string))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
@@ -64,8 +66,9 @@ func (handler *RecipeHandler) UpdateRecipe(c *gin.Context) {
 
 func (handler *RecipeHandler) DeleteRecipe(c *gin.Context) {
 	id := c.Param("id")
-
-	err := handler.service.DeleteRecipe(id)
+	requesterId, _ := c.Get("user_id")
+	requesterRole, _ := c.Get("role")
+	err := handler.service.DeleteRecipe(id, requesterId.(string), requesterRole.(string))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
