@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, Flame, User, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Flame, User, ArrowRight, AlertCircle, Ghost } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios'; 
 
@@ -7,6 +7,7 @@ const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false); // <--- NUEVO ESTADO
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,8 +24,9 @@ const Login = () => {
     const errorParam = params.get('error');
 
     if (token) {
+      // Por defecto, Google Login lo guardamos en localStorage (persistente)
       localStorage.setItem('token', token);
-      navigate('/'); // Redirigir al Home
+      navigate('/'); 
     }
     
     if (errorParam) {
@@ -37,10 +39,10 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-    setError(''); // Limpiar error al escribir
+    setError(''); 
   };
 
-  // Validar contraseña según las reglas de tu backend (backend/auth/password.go)
+  // Validar contraseña
   const validatePassword = (pass) => {
     if (pass.length < 12) return "Mínimo 12 caracteres";
     if (!/[A-Z]/.test(pass)) return "Falta una mayúscula";
@@ -69,10 +71,32 @@ const Login = () => {
       const response = await api.post(endpoint, formData);
 
       if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        navigate('/'); // Redirigir exitosamente
+        const token = response.data.token;
+        // Asumiendo que el backend devuelve también el usuario, es bueno guardarlo
+        // Si no lo devuelve, borra las líneas de userString
+        const userString = JSON.stringify(response.data.user || {}); 
+
+        // --- LÓGICA DE RECORDAR DATOS (MEJORADA) ---
+        if (rememberMe) {
+            // 1. Guardamos en Local (Persistente)
+            localStorage.setItem('token', token);
+            if (response.data.user) localStorage.setItem('user', userString);
+            
+            // 2. IMPORTANTE: Limpiamos Session para que no haya duplicados
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
+        } else {
+            // 1. Guardamos en Session (Temporal)
+            sessionStorage.setItem('token', token);
+            if (response.data.user) sessionStorage.setItem('user', userString);
+
+            // 2. IMPORTANTE: Limpiamos Local por si antes había entrado con "Recordarme"
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+        }
+
+        navigate('/'); 
       } else {
-        // Caso raro donde registra pero no devuelve token
         setIsLogin(true);
         setError('Cuenta creada. Por favor inicia sesión.');
       }
@@ -85,13 +109,17 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    // IMPORTANTE: Asegúrate de que esta URL coincida con tu backend
     window.location.href = "https://burned.onrender.com/auth/google/login";
+  };
+
+  // Función para manejar el modo invitado
+  const handleGuestLogin = () => {
+    navigate('/'); // Simplemente redirige al Home sin token
   };
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-2xl relative overflow-hidden">
+      <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-300">
         
         {/* Decoración de fondo */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-600 to-red-600"></div>
@@ -173,6 +201,22 @@ const Login = () => {
             )}
           </div>
 
+          {/* --- CHECKBOX RECORDAR DATOS (Solo en Login) --- */}
+          {isLogin && (
+            <div className="flex items-center mt-2">
+                <input
+                    id="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-orange-600 bg-zinc-950 border-zinc-700 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer accent-orange-600"
+                />
+                <label htmlFor="remember-me" className="ml-2 text-sm text-zinc-400 cursor-pointer select-none">
+                    Recordar mis datos
+                </label>
+            </div>
+          )}
+
           <button 
             type="submit" 
             disabled={loading}
@@ -197,15 +241,26 @@ const Login = () => {
           </div>
         </div>
 
-        <div>
-          <button 
-            onClick={handleGoogleLogin}
-            type="button"
-            className="w-full bg-white text-zinc-900 font-medium py-3 rounded-lg hover:bg-zinc-200 transition flex items-center justify-center gap-3"
-          >
-            <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="google" />
-            Google
-          </button>
+        <div className="space-y-3">
+            {/* BOTÓN GOOGLE */}
+            <button 
+                onClick={handleGoogleLogin}
+                type="button"
+                className="w-full bg-white text-zinc-900 font-medium py-3 rounded-lg hover:bg-zinc-200 transition flex items-center justify-center gap-3"
+            >
+                <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="google" />
+                Google
+            </button>
+
+            {/* BOTÓN MODO INVITADO */}
+            <button 
+                onClick={handleGuestLogin}
+                type="button"
+                className="w-full bg-zinc-800 text-zinc-300 font-medium py-3 rounded-lg hover:bg-zinc-700 hover:text-white transition flex items-center justify-center gap-2 border border-zinc-700"
+            >
+                <Ghost className="w-5 h-5" />
+                Entrar como Invitado
+            </button>
         </div>
 
         <p className="text-center mt-8 text-zinc-500 text-sm">
