@@ -139,7 +139,7 @@ func mappingRoutes() {
 		priv.POST("/rate-recipe/:id", RatingHandler.RateRecipe)
 
 		priv.DELETE("/comments/:id", CommentHandler.DeleteComment)
-		priv.GET("/comments/:id", CommentHandler.GetCommentsById)
+		priv.GET("/comments/:id", CommentHandler.GetCommentById)
 		priv.POST("/comments", CommentHandler.CreateComment)
 	}
 }
