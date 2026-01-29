@@ -5,6 +5,7 @@ import (
 	"burned/backend/models"
 	"burned/backend/repositories"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -62,22 +63,26 @@ func (service *CommentService) CreateComment(comment dtos.CommentRequest, idUser
 	return response, nil
 }
 func (service *CommentService) DeleteComment(commentId string, requesterId string, requesterRole string) error {
-
+	fmt.Printf("DEBUG: Iniciando borrado. ID Comentario: %s, Solicitante: %s, Rol: %s\n", commentId, requesterId, requesterRole)
 	commentOid, err := primitive.ObjectIDFromHex(commentId)
 	if err != nil {
+		fmt.Println("DEBUG ERROR: Fallo al convertir commentId a hex")
 		return errors.New("invalid id")
 	}
 	userOid, err := primitive.ObjectIDFromHex(requesterId)
 	if err != nil {
+		fmt.Println("DEBUG ERROR: Fallo al convertir requesterId a hex")
 		return errors.New("invalid id")
 	}
 	comment, err := service.commentRepo.GetCommentsById(commentOid)
 	if err != nil {
+		fmt.Printf("DEBUG ERROR: Comentario no encontrado en DB: %v\n", err)
 		return errors.New("comment not found")
 	}
 
 	recipe, err := service.recipeRepo.GetRecipeById(comment.RecipeID)
 	if err != nil {
+		fmt.Printf("DEBUG ERROR: Receta %s no encontrada: %v\n", comment.RecipeID.Hex(), err)
 		return errors.New("associated recipe not found")
 	}
 
@@ -86,11 +91,13 @@ func (service *CommentService) DeleteComment(commentId string, requesterId strin
 	isRecipeOwner := recipe.UserID == userOid
 
 	if !isAdmin && !isOwner && !isRecipeOwner {
+		fmt.Printf("DEBUG: Permisos -> EsDueñoComentario: %t, EsAdmin: %t, EsDueñoReceta: %t\n", isOwner, isAdmin, isRecipeOwner)
 		return errors.New("unauthorized to delete this comment")
 	}
 
 	result, err := service.commentRepo.DeleteComment(commentOid)
 	if err != nil || result.DeletedCount == 0 {
+		fmt.Println("DEBUG ERROR: Mongo dijo que borró 0 documentos")
 		return errors.New("could not delete comment")
 	}
 	return nil
