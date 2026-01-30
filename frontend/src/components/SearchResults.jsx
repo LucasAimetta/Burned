@@ -137,15 +137,15 @@ const SearchResults = () => {
                             type="range" 
                             name="time" 
                             min="5" 
-                            max="180" 
+                            max="240" 
                             step="5"
-                            value={filters.time || 180} 
+                            value={filters.time || 240} 
                             onChange={handleFilterChange}
                             className="w-full accent-orange-500 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
                         />
                         <div className="flex justify-between text-xs text-zinc-600 mt-1">
                             <span>5m</span>
-                            <span>3h</span>
+                            <span>4h</span>
                         </div>
                     </div>
 
