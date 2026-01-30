@@ -137,9 +137,9 @@ const SearchResults = () => {
                             type="range" 
                             name="time" 
                             min="5" 
-                            max="240" 
+                            max="300" 
                             step="5"
-                            value={filters.time || 240} 
+                            value={filters.time || 300} 
                             onChange={handleFilterChange}
                             className="w-full accent-orange-500 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
                         />

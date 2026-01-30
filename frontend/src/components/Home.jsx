@@ -119,7 +119,7 @@ const Home = () => {
   const [recipes, setRecipes] = useState([]);
   const [topRecipes, setTopRecipes] = useState([]);
   const [savedRecipeIds, setSavedRecipeIds] = useState(new Set());
-  const [filters, setFilters] = useState({ tags: '', difficulty: '', time: 180 });
+  const [filters, setFilters] = useState({ tags: '', difficulty: '', time: 480 });
   const [visibleCount, setVisibleCount] = useState(9);
 
   // ✅ LÓGICA DE GENERACIÓN DE CHISPAS (BRASAS)
