@@ -97,7 +97,7 @@ const FilterBar = ({ filters, onFilterChange, onClear }) => {
                     id="filter-time"
                     type="range" 
                     name="time"
-                    min="5" max="180" step="5"
+                    min="5" max="300" step="5"
                     value={filters.time}
                     onChange={handleChange}
                     className="w-full accent-orange-500 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer block"
