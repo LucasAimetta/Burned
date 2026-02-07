@@ -1,19 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, NavLink } from 'react-router-dom'; // Asegúrate de tener NavLink aquí
 import api from '../api/axios';
-import { Flame, PlusSquare, LogOut, Home, User, LogIn, Search, Clock, BookOpen, Menu, X } from 'lucide-react';
+import { Flame, PlusSquare, LogOut, Home, User, LogIn, Search, BookOpen, Menu, X } from 'lucide-react';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]); 
   const [showSuggestions, setShowSuggestions] = useState(false); 
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // ✅ Estado para el menú móvil
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const wrapperRef = useRef(null); 
 
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user'));
   const isAdmin = user?.role === 'admin';
+
+  // --- DEFINICIÓN DE ESTILOS PARA LOS LINKS ---
+  // Esto hace que el código sea más limpio. 
+  // Si está activo: Fondo Blanco + Texto Negro.
+  // Si no: Texto Gris + Hover.
+  const navLinkClass = ({ isActive }) => 
+    isActive 
+      ? "bg-white text-black px-4 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2" 
+      : "text-zinc-400 hover:bg-zinc-800 hover:text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2";
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -117,33 +126,41 @@ const Navbar = () => {
           </div>
 
           {/* BOTONES ESCRITORIO (md:flex) */}
-          <div className="hidden md:flex items-center gap-4 shrink-0">
-            <Link to="/" className="text-zinc-400 hover:text-white p-2 transition flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 shrink-0">
+            
+            {/* 1. EXPLORAR (HOME) - Ahora usa NavLink */}
+            <NavLink to="/" className={navLinkClass}>
               <Home className="w-5 h-5" />
               <span className="hidden lg:inline">Explorar</span>
-            </Link>
+            </NavLink>
             
             {token ? (
               <>
+                {/* 2. MIS RECETAS - Ahora usa NavLink */}
                 {!isAdmin && (
-                  <Link to="/my-recipes" className="text-zinc-400 hover:text-orange-400 p-2 transition flex items-center gap-2">
+                  <NavLink to="/my-recipes" className={navLinkClass}>
                     <BookOpen className="w-5 h-5" />
                     <span className="hidden lg:inline">Mis Recetas</span>
-                  </Link>
+                  </NavLink>
                 )}
-                <Link to="/profile" className="text-zinc-400 hover:text-orange-400 p-2 transition flex items-center gap-2">
+
+                {/* 3. MI PERFIL - Ahora usa NavLink */}
+                <NavLink to="/profile" className={navLinkClass}>
                     <User className="w-5 h-5" />
                     <span className="hidden lg:inline">Mi Perfil</span>
-                </Link>
-                <Link to="/create-recipe" className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg transition font-medium flex items-center gap-2 shadow-lg shadow-orange-900/20">
+                </NavLink>
+
+                {/* BOTÓN CREAR (Este lo dejamos naranja porque es una acción principal) */}
+                <Link to="/create-recipe" className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg transition font-medium flex items-center gap-2 shadow-lg shadow-orange-900/20 ml-2">
                   <PlusSquare className="w-5 h-5" />
                   <span className="hidden sm:inline">Crear</span>
                 </Link>
+
                 <div className="h-6 w-px bg-zinc-800 mx-2"></div>
                 <button onClick={handleLogout} className="text-zinc-400 hover:text-red-500 p-2 transition"><LogOut className="w-5 h-5" /></button>
               </>
             ) : (
-              <Link to="/login" className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg transition font-medium flex items-center gap-2">
+              <Link to="/login" className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg transition font-medium flex items-center gap-2 ml-2">
                 <LogIn className="w-4 h-4" />
                 <span>Iniciar Sesión</span>
               </Link>
@@ -162,12 +179,11 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* ✅ CONTENIDO MENÚ MÓVIL (Solo visible si isMenuOpen es true) */}
+      {/* ✅ CONTENIDO MENÚ MÓVIL */}
       {isMenuOpen && (
         <div className="md:hidden bg-zinc-900 border-t border-zinc-800 animate-in slide-in-from-top duration-300">
           <div className="px-4 pt-4 pb-6 space-y-4">
             
-            {/* Buscador en Móvil */}
             <form onSubmit={handleSearchSubmit} className="relative w-full">
                 <Search className="absolute left-3 top-3 text-zinc-500 w-4 h-4" />
                 <input 
@@ -179,24 +195,37 @@ const Navbar = () => {
                 />
             </form>
 
-            <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 text-zinc-300 hover:text-white py-2 text-lg font-medium">
+            <NavLink 
+                to="/" 
+                onClick={() => setIsMenuOpen(false)} 
+                className={({ isActive }) => isActive ? "flex items-center gap-4 bg-white text-black py-2 px-4 rounded-lg text-lg font-bold" : "flex items-center gap-4 text-zinc-300 hover:text-white py-2 px-4 text-lg font-medium"}
+            >
               <Home className="w-6 h-6" /> Explorar
-            </Link>
+            </NavLink>
 
             {token ? (
               <>
                 {!isAdmin && (
-                  <Link to="/my-recipes" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 text-zinc-300 hover:text-white py-2 text-lg font-medium">
+                  <NavLink 
+                    to="/my-recipes" 
+                    onClick={() => setIsMenuOpen(false)} 
+                    className={({ isActive }) => isActive ? "flex items-center gap-4 bg-white text-black py-2 px-4 rounded-lg text-lg font-bold" : "flex items-center gap-4 text-zinc-300 hover:text-white py-2 px-4 text-lg font-medium"}
+                  >
                     <BookOpen className="w-6 h-6" /> Mis Recetas
-                  </Link>
+                  </NavLink>
                 )}
-                <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 text-zinc-300 hover:text-white py-2 text-lg font-medium">
+                <NavLink 
+                    to="/profile" 
+                    onClick={() => setIsMenuOpen(false)} 
+                    className={({ isActive }) => isActive ? "flex items-center gap-4 bg-white text-black py-2 px-4 rounded-lg text-lg font-bold" : "flex items-center gap-4 text-zinc-300 hover:text-white py-2 px-4 text-lg font-medium"}
+                >
                   <User className="w-6 h-6" /> Mi Perfil
-                </Link>
-                <Link to="/create-recipe" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 bg-orange-600 text-white p-4 rounded-xl font-bold text-center justify-center">
+                </NavLink>
+
+                <Link to="/create-recipe" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 bg-orange-600 text-white p-4 rounded-xl font-bold text-center justify-center mt-2">
                   <PlusSquare className="w-6 h-6" /> Crear Receta
                 </Link>
-                <button onClick={handleLogout} className="flex items-center gap-4 text-red-500 w-full py-2 text-lg font-medium border-t border-zinc-800 pt-4">
+                <button onClick={handleLogout} className="flex items-center gap-4 text-red-500 w-full py-2 px-4 text-lg font-medium border-t border-zinc-800 pt-4 mt-2">
                   <LogOut className="w-6 h-6" /> Cerrar Sesión
                 </button>
               </>
